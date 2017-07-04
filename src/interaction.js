@@ -66,7 +66,7 @@ Interaction.prototype.handleTouch = function() {
 	function updateCurrentSequenceId() {
 		sequenceIdCurrent = self.world.editedSequenceId;
 	}
-	function up(e) {
+	function up() {
 		shouldContinue = false;
 		updateCurrentSequenceId();
 		if (!animator.isRecording) return;
@@ -112,7 +112,7 @@ Interaction.prototype.publishNewShape = function(shape) {
 }
 
 Interaction.prototype.handleNewStroke = function(stroke) {
-	console.log(stroke);
+	debugger;
 	stroke = Util.unique(Util.resample(stroke, 256));
 	let verts = new Vertices(stroke);
 	verts.updateAll();
