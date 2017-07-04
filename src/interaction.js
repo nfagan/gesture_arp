@@ -14,7 +14,7 @@ Interaction.prototype.constructor = Interaction;
 
 Interaction.prototype.handleTouch = function() {
 
-	let self = this,	
+	var self = this,	
 		position,
 		stroke = [],
 		shouldContinue = true,
@@ -47,7 +47,7 @@ Interaction.prototype.handleTouch = function() {
 			requestAnimationFrame(record);
 			return;
 		}
-		let nearbyVertices = shape.getVerticesNear(position, bounds),
+		var nearbyVertices = shape.getVerticesNear(position, bounds),
 			isNearCenter = shape.isNearCenter(position, bounds);
 		if (nearbyVertices.length === 0 && !isNearCenter) {
 			self.publishNewShape(undefined);
@@ -112,7 +112,6 @@ Interaction.prototype.publishNewShape = function(shape) {
 }
 
 Interaction.prototype.handleNewStroke = function(stroke) {
-	debugger;
 	stroke = Util.unique(Util.resample(stroke, 256));
 	let verts = new Vertices(stroke);
 	verts.updateAll();
