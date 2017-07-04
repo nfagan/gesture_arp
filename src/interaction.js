@@ -34,9 +34,11 @@ Interaction.prototype.handleTouch = function() {
 		.on('move', move);
 
 	function move(e) {
+		console.log(e);
 		position = {x: e.clientX, y: e.clientY};
 	}
 	function down(e) {
+		console.log(e);
 		shouldContinue = true;
 		shape = self.world.getEditedShape();
 		sequenceIdOnDown = self.world.editedSequenceId;
@@ -66,7 +68,8 @@ Interaction.prototype.handleTouch = function() {
 	function updateCurrentSequenceId() {
 		sequenceIdCurrent = self.world.editedSequenceId;
 	}
-	function up() {
+	function up(e) {
+		console.log(e);
 		shouldContinue = false;
 		updateCurrentSequenceId();
 		if (!animator.isRecording) return;
