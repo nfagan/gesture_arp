@@ -6,10 +6,11 @@
   "private": true,
   "scripts": {
     "dev": "node build/dev-server.js",
-    "start": "node build/dev-server.js",
+    "start": "node index.js",
     "build": "node build/build.js"
   },
   "dependencies": {
+    "express": "^4.15.3",
     "interact.js": "^1.2.8",
     "vue": "^2.3.3",
     "vue-router": "^2.3.1"
