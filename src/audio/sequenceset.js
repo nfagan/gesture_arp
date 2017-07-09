@@ -91,8 +91,10 @@ SequenceSet.prototype.nextSequence = function() {
 }
 
 SequenceSet.prototype.switchToColumn = function(index) {
-	let shouldResumeLoop = this.isLooping;
-	if (this.sequences.length > 1) {
+	let shouldResumeLoop = this.isLooping,
+		shouldCancelLoop = this.sequences.length > 1;
+		// shouldCancelLoop = index !== this.activeSequenceIndex;
+	if (shouldCancelLoop) {
 		this.forceCancelAllLoops();
 		this.activeSequenceIndex = index;
 	}
