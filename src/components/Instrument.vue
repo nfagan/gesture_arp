@@ -130,7 +130,8 @@ export default {
 .instrument {
 	height: 95%; width: 95%; max-height: 500px; max-width: 500px;
 	display: flex; flex-direction: column;
-	overflow: scroll;
+	/*overflow: scroll;*/
+	overflow: hidden;
 }
 
 .instrument__canvas {

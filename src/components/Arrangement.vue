@@ -128,7 +128,8 @@ export default {
 	width: 95%;
 	top: 0px;
 	left: 0px;
-	overflow: scroll;
+	/*overflow: scroll;*/
+	overflow: hidden;
 }
 
 .row {
