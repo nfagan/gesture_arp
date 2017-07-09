@@ -18,6 +18,12 @@ app.use(express.static('static'))
 
 app.get('/', function(req, res) {
 	res.sendFile('dist/html/index.html',{ root: __dirname })
+});
+
+//	favicon
+
+app.get('/favicon.ico', function(req, res) {
+	res.sendFile('static/img/favicon.ico',{ root: __dirname });
 })
 
 //	serve sounds
