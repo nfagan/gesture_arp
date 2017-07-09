@@ -271,6 +271,8 @@ Detector.prototype.getAdjustedRectVertices = function() {
 	points.push(points[0]);
 	var distances = rectVerts.getConsecutiveDistances(points),
 		L = Util.mean(distances),
+		// LA = Util.mean([distances[0], distances[2]]),
+		// LB = Util.mean([distances[1], distances[3]]),
 		centroid = rectVerts.centroid,
 		midPoint = new Point(L/2, L/2, 0),
 		A = centroid.copy(),
@@ -343,6 +345,9 @@ Detector.prototype.getCircle = function() {
 }
 
 Detector.prototype.getRandom = function() {
+	let N = this.vertices.points.length-1;
+	this.vertices.points = [this.vertices.points[N]];
+	this.vertices.updateAllExceptHull();
 	return new Shape(this.vertices, 'random');
 }
 

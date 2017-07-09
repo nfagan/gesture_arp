@@ -11,6 +11,7 @@ var express = require('express')
 var webpack = require('webpack')
 var proxyMiddleware = require('http-proxy-middleware')
 var webpackConfig = require('./webpack.dev.conf')
+var fs = require('fs');
 
 // default port where dev server listens for incoming traffic
 var port = process.env.PORT || config.dev.port
@@ -77,6 +78,18 @@ devMiddleware.waitUntilValid(() => {
     opn(uri)
   }
   _resolve()
+})
+
+app.get('/sounds/:soundName', function(req, res) {
+  var filename = '/Volumes/external/code/web/gesture_arp/app/static/sounds/' + req.params.soundName;
+
+  fs.stat(filename, function(err, stat) {
+    if (err === null) {
+      res.sendFile(filename);
+      return;
+    }
+    res.status(404).send('Not Found')
+  })
 })
 
 var server = app.listen(port)

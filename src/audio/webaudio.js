@@ -1,4 +1,6 @@
 import { Util } from '../util.js';
+import instruments from './instruments.js';
+import Tuna from 'tunajs'
 
 /*
 	constructor
@@ -15,6 +17,9 @@ function WebAudio(properties) {
 	//	if initialization fails
 
 	this.context = this.initContext();
+
+	this.tuna = new Tuna(this.context);
+	this.impulse = undefined;
 
 	//	array of buffer objects with <buffer> and <filename>
 	//	properties
@@ -86,6 +91,14 @@ WebAudio.prototype.loadTestSounds = function() {
 		}
 		request.send()
 	})
+}
+
+WebAudio.prototype.loadImpulse = function() {
+	let self = this;
+	let promise = this.loadSound('impulse_rev.wav')
+		.then(function(sound) {
+			self.impulse = sound;
+		});
 }
 
 WebAudio.prototype.loadSound = function(filename) {
@@ -171,6 +184,7 @@ WebAudio.prototype.schedulePlay = function(filename, props) {
 	let interval = this.interval,
 		currentBeat = this.getCurrentBeat(),
 		noteLength = props.noteLength,
+		coordinates = props.coordinates,
 		scheduledTime,
 		beatsToSchedule,
 		duration,
@@ -198,7 +212,10 @@ WebAudio.prototype.schedulePlay = function(filename, props) {
 
 	//	first scheduled time
 
-	scheduledTime = (currentBeat * interval) + interval/beatsToSchedule;
+	// scheduledTime = (currentBeat * interval) + interval/beatsToSchedule;
+	// scheduledTime = (currentBeat * interval) + interval/6;
+	// scheduledTime = (currentBeat * interval) + interval/2
+	scheduledTime = (currentBeat * interval) + interval/2;
 
 	//	note length
 
@@ -208,6 +225,8 @@ WebAudio.prototype.schedulePlay = function(filename, props) {
 
 	this.currentBeat = currentBeat;
 
+	//	remove the sources from the sequence
+
 	props.sequence.sources = [];
 
 	for (let i=0; i<beatsToSchedule; i++) {
@@ -216,7 +235,7 @@ WebAudio.prototype.schedulePlay = function(filename, props) {
 
 		//	play each note at time <playTime>
 
-		this.play(filename, playProps);
+		this.play(filename, playProps, coordinates[i]);
 
 		//	for output
 
@@ -226,7 +245,7 @@ WebAudio.prototype.schedulePlay = function(filename, props) {
 	return {noteTimes: scheduledTimes, noteDuration: duration};
 }
 
-WebAudio.prototype.play = function(filename, props) {
+WebAudio.prototype.play = function(filename, props, coord) {
 	let source = this.context.createBufferSource(),
 		buffer = this.getBufferByFilename(filename),
 		defaultPlayProperties = this.defaultPlayProperties,
@@ -242,13 +261,58 @@ WebAudio.prototype.play = function(filename, props) {
 
 	if (!props.audible) return;
 
+	let pitchMatrix = props.sequence.constraint.pitchMatrix,
+		pitchIndex,
+		xModulation;
+	if (props.identity !== 'circle') {
+		pitchIndex = Math.floor((1-coord.y) * (pitchMatrix.length-1));
+		xModulation = coord.x;
+	} else {
+		let radius = (props.radius[0].x + props.radius[0].y)/2,
+			sign = 1,
+			adjustedY;
+		if (Math.random() > .5) sign = -1;
+		adjustedY = coord.y + Math.random()*radius*sign;
+		if (adjustedY > 1) adjustedY = 1;
+		if (adjustedY < 0) adjustedY = 0;
+		pitchIndex = Math.floor((1-adjustedY) * (pitchMatrix.length-1));
+		xModulation = 1-adjustedY;
+	}	
+
+	let octaveSemitone = pitchMatrix[pitchIndex],
+		semitone = (octaveSemitone[0]*12) + octaveSemitone[1];
+
+	let bitcrusher = props.sequence.bitcrusher || new this.tuna.Bitcrusher({
+    	bits: 8,
+    	normfreq: xModulation,
+    	bufferSize: 4096
+	});
+
+	bitcrusher.normfreq = (xModulation*.1) + .1;
+
+	let convolver = props.sequence.convolver || new this.tuna.PingPongDelay({
+	    wetLevel: 0.5, //0 to 1
+	    feedback: 0, //0 to 1
+	    delayTimeLeft: 200, //1 to 10000 (milliseconds)
+	    delayTimeRight: 350 //1 to 10000 (milliseconds)
+	});
+
+	convolver.wetLevel = xModulation;
+
+	props.sequence.bitcrusher = bitcrusher;
+	props.sequence.convolver = convolver;
+
+	source.playbackRate.value = Math.pow(2, semitone/12);
 	source.buffer = buffer;
-	source.connect(this.context.destination);
+
+	source.connect(bitcrusher);
+	bitcrusher.connect(convolver);
+	convolver.connect(this.context.destination);
 	source.start(when);
 }
 
 WebAudio.prototype.playDummySound = function() {
-	if ( this.playedDummySound ) return;
+	if (this.playedDummySound) return;
 
 	let buffer = this.context.createBuffer(1, 22050, 44100),
 		source = this.context.createBufferSource();
@@ -265,15 +329,15 @@ WebAudio.prototype.playDummySound = function() {
 	instantiate
 */
 
-const webAudio = new WebAudio({
-	bpm: 85, filenames: ['downychirp.wav']
-});
-webAudio.loadTestSounds();
-webAudio.playDummySound();
+const filenames = Object.keys(instruments);
 
-// const webAudio = new WebAudio({
-// 	bpm: 85, filenames: ['808_hi.mp3', 'perc_kick.mp3', 'piano_g.mp3', 'celeste_g.mp3']
-// })
+const webAudio = new WebAudio({
+	bpm: 85, 
+	filenames
+})
+
+// webAudio.loadSounds();
+// webAudio.loadImpulse();
 
 export { webAudio }
 

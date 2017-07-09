@@ -12,8 +12,10 @@
   "dependencies": {
     "express": "^4.15.3",
     "interact.js": "^1.2.8",
+    "tunajs": "^1.0.0",
     "vue": "^2.3.3",
-    "vue-router": "^2.3.1"
+    "vue-router": "^2.3.1",
+    "vuex": "^2.3.1"
   },
   "devDependencies": {
     "autoprefixer": "^6.7.2",

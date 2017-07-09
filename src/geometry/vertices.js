@@ -85,6 +85,18 @@ Vertices.prototype.copyPoints = function(arr) {
 	});
 }
 
+Vertices.prototype.copyPoint = function(pt) {
+	return new Point(pt.x, pt.y, pt.index);
+}
+
+Vertices.prototype.repPoint = function(point, N) {
+	var points = [];
+	for (let i=0; i<N; i++) {
+		points.push(point);
+	}
+	return points;
+}
+
 /*
 	OPERATIONS
 */
@@ -98,6 +110,18 @@ Vertices.prototype.arrayAdd = function(points, b) {
 Vertices.prototype.arrayMinus = function(points, b) {
 	for (var i=0; i<points.length; i++) {
 		points[i].minus(b);
+	}
+}
+
+Vertices.prototype.arrayTimes = function(points, b) {
+	for (var i=0; i<points.length; i++) {
+		points[i].times(b);
+	}
+}
+
+Vertices.prototype.arrayDivide = function(points, b) {
+	for (var i=0; i<points.length; i++) {
+		points[i].divide(b);
 	}
 }
 
@@ -471,6 +495,26 @@ Point.prototype.plus = function(b) {
 	} else {
 		this.x += b;
 		this.y += b;
+	}
+}
+
+Point.prototype.times = function(b) {
+	if (b instanceof Point) {
+		this.x *= b.x;
+		this.y *= b.y;
+	} else {
+		this.x *= b;
+		this.y *= b;
+	}
+}
+
+Point.prototype.divide = function(b) {
+	if (b instanceof Point) {
+		this.x /= b.x;
+		this.y /= b.y;
+	} else {
+		this.x /= b;
+		this.y /= b;
 	}
 }
 

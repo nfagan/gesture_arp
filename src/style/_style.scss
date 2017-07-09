@@ -1,0 +1,15 @@
+.interface {
+	background-color: yellow;
+}
+
+.circle {
+	border-radius: 50%;
+	background-color: white;
+	width: 25px;
+	height: 25px;
+}
+
+.circle--active {
+	width: 35px;
+	height: 35px;
+}

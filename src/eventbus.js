@@ -3,6 +3,9 @@
 function EventBus() {
 	this.topics = {}
 	this.topicMap = {
+		modeChange: 'modeChange',
+		canvasResize: 'canvasResize',
+		canvasResizeEnd: 'canvasResizeEnd',
 		newShapeReady: 'newShapeReady',
 		endOfSequence: 'endOfSequence',
 		newSequenceSetCreated: 'newSequenceSetCreated',
@@ -10,7 +13,11 @@ function EventBus() {
 		newActiveSequence: 'newActiveSequence',
 		newEditedSequence: 'newEditedSequence',
 		newActiveSequenceSet: 'newActiveSequenceSet',
-		newNoteTimesReady: 'newNoteTimesReady'
+		newNoteTimesReady: 'newNoteTimesReady',
+		clearShape: 'clearShape',
+		newSurface: 'newSurface',
+		deletedColumn: 'deletedColumn',
+		soundsLoaded: 'soundsLoaded'
 	}
 }
 
