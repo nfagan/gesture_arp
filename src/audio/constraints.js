@@ -6,21 +6,14 @@ const getSequenceConstraints = function() {
 		semitones.push(i);
 	}
 	return [
-		// {
-		// 	name: 'major1',
-		// 	semitones: [ 0, 7, 9 ],
-		// 	octaves: [ -2, -1, 0, 1, 2 ],
-		// 	style: 'random',
-		// 	color: 'blue',
-		// 	rgb: [ 255, 40, 255 ]
-		// },
 		{
 			name: 'minor1',
 			semitones: [ 2, 5, 10 ],
 			octaves: [ -2, -1, 0, 1, 2 ],
 			style: 'random',
 			color: 'red',
-			rgb: [ 255, 255, 200 ]
+			rgb: [ 255, 255, 200 ],
+			instrument: true
 		},
 		{
 			name: 'minor2',
@@ -28,7 +21,8 @@ const getSequenceConstraints = function() {
 			octaves: [ -2, -1, 0, 1, 2 ],
 			style: 'random',
 			color: 'green',
-			rgb: [ 255, 200, 255 ]
+			rgb: [ 255, 200, 255 ],
+			instrument: true
 		},
 		{
 			name: 'minor3',
@@ -36,7 +30,8 @@ const getSequenceConstraints = function() {
 			octaves: [ -2, -1, 0, 1, 2 ],
 			style: 'random',
 			color: 'blue',
-			rgb: [ 255, 200, 255 ]
+			rgb: [ 255, 200, 255 ],
+			instrument: true
 		},
 		{
 			name: 'full',
@@ -44,8 +39,14 @@ const getSequenceConstraints = function() {
 			octaves: [ -2, -1, 0, 1, 2 ],
 			style: 'random',
 			color: 'black',
-			rgb: [ 255, 40, 255 ]
-
+			rgb: [ 255, 40, 255 ],
+			instrument: true
+		},
+		{
+			name: 'beatpad',
+			semitones: [ 3, 5, 7 ],
+			octaves: [ -2, -1, 0, 1, 2 ],
+			instrument: false
 		},
 	].map(function(sequence) {
 		sequence.pitchMatrix = matrixMaker(sequence);
@@ -68,3 +69,12 @@ function matrixMaker(sequence) {
 }
 
 export { getSequenceConstraints }
+
+// {
+	// 	name: 'major1',
+	// 	semitones: [ 0, 7, 9 ],
+	// 	octaves: [ -2, -1, 0, 1, 2 ],
+	// 	style: 'random',
+	// 	color: 'blue',
+	// 	rgb: [ 255, 40, 255 ]
+	// },

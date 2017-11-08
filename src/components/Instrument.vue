@@ -33,8 +33,25 @@ import { eventBus } from '../eventbus.js';
 import instruments from '../audio/instruments.js';
 import { getSequenceConstraints } from '../audio/constraints.js';
 
-const filenames = Object.keys(instruments),
-	constraints = getSequenceConstraints();
+/* 
+	only allow filenames that are available in
+	instrument mode
+*/
+
+let keys = Object.keys(instruments),
+	filenames = [],
+	constraints = getSequenceConstraints().filter(function(constr) {
+		return constr.instrument === true;
+	});
+
+for (let i=0; i<keys.length; i++) {
+	let fname = keys[i],
+		instrument = instruments[fname],
+		availableInInstrument = instrument.availableIn.some(function(el) {
+			return el === 'INSTRUMENT';
+		});
+	if (availableInInstrument) filenames.push(fname);
+}
 
 export default {
 	name: 'instrument',

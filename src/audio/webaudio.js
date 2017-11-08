@@ -1,5 +1,6 @@
 import { Util } from '../util.js';
 import instruments from './instruments.js';
+import { getSequenceConstraints } from './constraints.js';
 import Tuna from 'tunajs'
 
 /*
@@ -23,6 +24,11 @@ function WebAudio(properties) {
 
 	//	array of buffer objects with <buffer> and <filename>
 	//	properties
+
+	this.constraints = getSequenceConstraints();
+	this.beatpadConstraint = this.constraints.filter(function(constr) {
+		return constr.instrument === false;
+	})[0];
 
 	this.buffers = [];
 	this.filenames = properties.filenames;
@@ -212,10 +218,8 @@ WebAudio.prototype.schedulePlay = function(filename, props) {
 
 	//	first scheduled time
 
-	// scheduledTime = (currentBeat * interval) + interval/beatsToSchedule;
-	// scheduledTime = (currentBeat * interval) + interval/6;
-	// scheduledTime = (currentBeat * interval) + interval/2
 	scheduledTime = (currentBeat * interval) + interval/2;
+	// scheduledTime = (currentBeat * interval) + interval;
 
 	//	note length
 
@@ -309,6 +313,26 @@ WebAudio.prototype.play = function(filename, props, coord) {
 	bitcrusher.connect(convolver);
 	convolver.connect(this.context.destination);
 	source.start(when);
+}
+
+WebAudio.prototype.playSimple = function(filename, when) {
+	let source = this.context.createBufferSource(),
+		buffer = this.getBufferByFilename(filename);
+
+	if (when === undefined) when = 0;
+
+	let pitchMatrix = this.beatpadConstraint.pitchMatrix,
+		pitchIndex = Math.floor(Math.random() * (pitchMatrix.length-1)),
+		octaveSemitone = pitchMatrix[pitchIndex],
+		semitone = (octaveSemitone[0]*12) + octaveSemitone[1];
+
+	source.playbackRate.value = Math.pow(2, semitone/12);
+
+	source.buffer = buffer;
+	source.connect(this.context.destination);
+	source.start(when);
+
+	return source;
 }
 
 WebAudio.prototype.playDummySound = function() {

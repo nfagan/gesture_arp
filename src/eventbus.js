@@ -17,7 +17,10 @@ function EventBus() {
 		clearShape: 'clearShape',
 		newSurface: 'newSurface',
 		deletedColumn: 'deletedColumn',
-		soundsLoaded: 'soundsLoaded'
+		soundsLoaded: 'soundsLoaded',
+		patternReady: 'patternReady',
+		beatpadContainerReady: 'beatpadContainerReady',
+		animatorReady: 'animatorReady'
 	}
 }
 

@@ -1,5 +1,6 @@
 import { webAudio } from '../audio/webaudio.js';
 import { eventBus } from '../eventbus.js';
+import Pattern from '../audio/pattern.js';
 import { SequenceSets } from '../audio/sequencesets.js';
 
 const sequenceSetManager = new SequenceSets(),
@@ -15,5 +16,11 @@ for (let i=0; i<NSETS; i++) {
 		set.createSequence(set.filename, j);
 	}
 }
+
+let pattern = sequenceSetManager.createPattern();
+
+pattern.createNextPattern();
+
+eventBus.publish(eventBus.topicMap.patternReady, {pattern});
 
 export { sequenceSetManager };

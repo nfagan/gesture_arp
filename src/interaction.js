@@ -5,13 +5,59 @@ import { Vertices, Point } from './geometry/vertices.js';
 import { eventBus } from './eventbus.js';
 import { webAudio } from './audio/webaudio.js';
 import interact from 'interact.js';
+import instruments from './audio/instruments.js';
 
 function Interaction(world, animator) {
 	this.world = world;
 	this.animator = animator;
+	this.beatpadContainer = undefined;
+	this.pattern = undefined;
+	this.filenames = Object.keys(instruments);
+	this.keyCodes = [];
+	for (let i=0; i<this.filenames.length; i++) {
+		this.keyCodes.push(instruments[this.filenames[i]].keyCode);
+	}
 }
 
 Interaction.prototype.constructor = Interaction;
+
+Interaction.prototype.handleBeatpadTouch = function() {
+	let element = this.beatpadContainer,
+		animator = this.animator,
+		pattern = this.pattern,
+		filenames = this.filenames,
+		world = this.world,
+		keyCodes = this.keyCodes;
+
+	window.addEventListener('keydown', function(e) {
+		let keyCode = e.keyCode,
+			index = Util.indexOf(keyCodes, keyCode);
+		if (index === -1) return;
+		if (world.mode !== 'BEATPAD') return;
+		let fname = filenames[index];
+		addNote(fname);
+	});
+
+	interact(element).on('down', down);
+
+	function down(e) {
+		e.preventDefault();
+		let target = e.target,
+			fname = target.dataset.filename;
+		if (fname === undefined) return;
+		addNote(fname);
+	}
+
+	function addNote(fname) {
+		pattern.addNote(fname);
+		animator.pendingNotes.push({
+			kind: 'pattern',
+			fname: fname,
+			noteDuration: webAudio.interval,
+			noteTime: webAudio.context.currentTime
+		});
+	}
+}
 
 Interaction.prototype.handleTouch = function() {
 

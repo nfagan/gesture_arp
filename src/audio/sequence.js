@@ -98,7 +98,7 @@ Sequence.prototype.handleCanvasResize = function(data) {
 	let width = data.canvasWidth,
 		height = data.canvasHeight;
 	if (width === 0 && height === 0) return;
-	if (this.mode === 'ARRANGEMENT') return;
+	if (this.mode === 'ARRANGEMENT' || this.mode === 'BEATPAD') return;
 	this.previousWidth = width;
 	this.previousHeight = height;
 }
@@ -131,7 +131,8 @@ Sequence.prototype.loop = function() {
 
 	eventBus.publish(newActiveSequenceTopic, {
 		sequenceId: this.id,
-		sequenceSetId: this.sequenceSet.id
+		sequenceSetId: this.sequenceSet.id,
+		sequenceIndex: this.index
 	});
 
 	const looper = () => {
@@ -174,12 +175,6 @@ Sequence.prototype.loop = function() {
 			return;
 		}
 
-		//	Only calculate properties if we're the active sequence
-
-		// if (this.isActive) {
-
-		// }
-
 		//	otherwise, schedule the appropriate number of notes associated with the
 		//	current beat, and return the scheduled note times
 
@@ -190,7 +185,7 @@ Sequence.prototype.loop = function() {
 			if (self.mode === 'INSTRUMENT') {
 				width = shape.canvas.width/ratio;
 				height = shape.canvas.height/ratio;
-			} else if (self.mode === 'ARRANGEMENT') {
+			} else if (self.mode === 'ARRANGEMENT' || self.mode === 'BEATPAD') {
 				width = self.previousWidth;
 				height = self.previousHeight;
 			}
@@ -208,6 +203,7 @@ Sequence.prototype.loop = function() {
 				currentTime = webAudio.context.currentTime;
 			//	mark self new note times are available
 			eventBus.publish(newNotesReadyTopic, {
+				kind: 'sequence',
 				sequenceId: self.id,
 				sequenceIndex: self.index,
 				sequenceSetId: self.sequenceSet.id,

@@ -19,11 +19,12 @@ const store = new Vuex.Store({
 		editedSequence: undefined,
 		canAddColumn: false,
 		didShowPlus: false,
-		canDeleteColumn: false
+		canDeleteColumn: false,
+		canShowBeatpad: false
 	},
 	mutations: {
 		switchMode(state, to) {
-			if (to !== 'ARRANGEMENT' && to !== 'INSTRUMENT') {
+			if (to !== 'ARRANGEMENT' && to !== 'INSTRUMENT' && to !== 'BEATPAD') {
 				throw new Error(`Unrecognized view mode ${to}`)
 			}
 			state.mode = to;

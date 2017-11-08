@@ -5,11 +5,15 @@ import ease from './ease.js';
 
 function Animator(world, canvas) {
 	this.world = world;
+	this.pattern = undefined;
 	this.activeCanvas = canvas;
 	this.instrumentCanvas = canvas;
 	this.arrangementCanvases = world.arrangementCanvases;
+	this.beatpadArrangementCanvases = [];
+	this.beatpadCanvases = [];
 	this.shouldAnimateInstrument = true;
 	this.shouldAnimateArrangement = false;
+	this.shouldAnimateBeatpad = false;
 	this.shouldDrawActiveNotes = true;
 	this.isRecording = false;
 	this.stroke = [];
@@ -19,6 +23,9 @@ function Animator(world, canvas) {
 			size: 30,
 			blipIncrement: .8
 		},
+		beatpadBlips: {
+			size: 20
+		},
 		drawCentroidArrangement: false,
 		drawCentroidInstrument: false
 	}
@@ -26,12 +33,19 @@ function Animator(world, canvas) {
 	this.pendingNotes = [];
 	this.activeNotes = [];
 	this.noteTimeTolerance = 1/50;
+	this.maxDuration = webAudio.interval/4;
 	this.mode = undefined;
 	this.editedSequence = undefined;
 	this.subscribe();
+	this.markReady();
 }
 
 Animator.prototype.constructor = Animator;
+
+Animator.prototype.markReady = function() {
+	let self = this;
+	eventBus.publish(eventBus.topicMap.animatorReady, {animator: self});
+}
 
 Animator.prototype.subscribe = function() {
 	let newNoteTimesTopic = eventBus.topicMap.newNoteTimesReady,
@@ -39,6 +53,7 @@ Animator.prototype.subscribe = function() {
 		newEditedSequenceTopic = eventBus.topicMap.newEditedSequence,
 		modeChangeTopic = eventBus.topicMap.modeChange,
 		deletedColumnTopic = eventBus.topicMap.deletedColumn;
+
 	eventBus.subscribe(newNoteTimesTopic, this.handleNewNoteTimes.bind(this));
 	eventBus.subscribe(canvasResizeTopic, this.handleCanvasResize.bind(this));
 	eventBus.subscribe(newEditedSequenceTopic, this.handleNewEditedSequence.bind(this));
@@ -47,8 +62,21 @@ Animator.prototype.subscribe = function() {
 }
 
 Animator.prototype.handleNewNoteTimes = function(data) {
+
+	if (this.mode === 'BEATPAD') {
+		if (data.kind !== 'pattern') return;
+		this.pendingNotes = data.notes;
+		return;
+	}
+
+	if (data.kind === 'pattern') {
+		this.pendingNotes = this.pendingNotes.concat(data.notes);
+		return;
+	}
+
 	for (let i=0; i<data.noteTimes.length; i++) {
 		this.pendingNotes.push({
+			kind: 'sequence',
 			sequenceId: data.sequenceId,
 			sequenceIndex: data.sequenceIndex,
 			sequenceSetId: data.sequenceSetId,
@@ -64,17 +92,31 @@ Animator.prototype.handleNewNoteTimes = function(data) {
 }
 
 Animator.prototype.updateMode = function(to) {
+	let prevMode = this.mode;
 	this.mode = to;
 	if (to === 'ARRANGEMENT') {
+		if (prevMode === 'BEATPAD') {
+			this.resetNotes(this.pendingNotes);
+			this.resetNotes(this.activeNotes);
+		}
 		this.shouldAnimateInstrument = false;
 		this.shouldAnimateArrangement = true;
+		this.shouldAnimateBeatpad = false;
 		this.clearArrangementCanvases();
 		this.animateArrangement();
-	} else {
+	} else if (to === 'INSTRUMENT') {
 		this.shouldAnimateInstrument = true;
 		this.shouldAnimateArrangement = false;
+		this.shouldAnimateBeatpad = false;
 		this.activeCanvas = this.instrumentCanvas;
 		this.animateInstrument();
+	} else if (to === 'BEATPAD') {
+		this.shouldAnimateInstrument = false;
+		this.shouldAnimateArrangement = false;
+		this.shouldAnimateBeatpad = true;
+		this.beatpadCanvases[0].element.width = 0;
+		this.clearBeatpadCanvases();
+		this.animateBeatpad();
 	}
 }
 
@@ -97,6 +139,13 @@ Animator.prototype.drawCircle = function(shape, dotSize, props) {
 }
 
 Animator.prototype.drawRectTriLineRand = function(shape, dotSize, props) {
+
+	if (isNaN(shape.center.y) && shape.identity === 'line') {
+		let y1 = shape.points[0].y,
+			y2 = shape.points[1].y;
+		shape.center.y = ((y2 - y1)/2) + y1;
+	}
+
 	let linePoints = shape.points.concat([shape.points[0]]),
 		vertPoints = shape.points.concat([shape.center]);
 	this.drawLine(linePoints, true, props);
@@ -111,6 +160,80 @@ Animator.prototype.drawShape = function(shape, dotSize, props) {
 	}
 }
 
+/*
+	BEATPAD
+*/
+
+Animator.prototype.animateBeatpad = function() {
+
+	let self = this,
+		dotSize = this.style.beatpadBlips.size,
+		blipIncrement = this.style.editedVertices.blipIncrement;
+
+	const animator = function() {
+		if (!self.shouldAnimateBeatpad) return;
+
+		self.updateActiveNotes();
+		self.clearBeatpadCanvases();
+
+		if (self.beatpadCanvases[0].element.width === 0) {
+			self.sizeBeatpadCanvases();
+		}
+		
+		for (let i=0; i<self.activeNotes.length; i++) {
+			let note = self.activeNotes[i];
+
+			if (note.kind !== 'pattern') continue;
+
+			// note.noteDuration = Math.min(note.noteDuration, self.maxDuration);
+
+			let filename = note.fname,
+				canvas = self.getBeatpadCanvas(filename),
+				ctx = canvas.getContext('2d'),
+				now = Date.now(),
+				start = note.start || now,
+				sign = note.sign || 1,
+				currentSize = note.currentSize || dotSize,
+				duration = Math.min(note.noteDuration, self.maxDuration)/2 * 1000,
+				p = (now-start) / duration,
+				canvasCenter = {
+					x: (canvas.width/2) / self.ratio,
+					y: (canvas.height/2) / self.ratio
+				},
+				val = ease.outQuad(p);
+			if (p > .9) {
+				note.sign = -1;
+				start = now;
+			}
+			currentSize = currentSize + (val*blipIncrement*sign);
+			note.start = start;
+			note.currentSize = currentSize;
+
+			if (currentSize < 0) continue;
+
+			self.activeCanvas = canvas;
+
+			// let color = instruments[filename].rgbString,
+			let color = 'white',
+				props = {
+					fillStyle: color,
+					strokeStyle: color
+				};
+
+			self.drawDots([canvasCenter], currentSize, false, props);
+		}
+
+		window.requestAnimationFrame(animator);
+	}
+
+	animator();	
+
+}
+
+/*
+		ARRANGEMENT
+*/
+
 Animator.prototype.animateArrangement = function() {
 
 	let self = this,
@@ -122,10 +245,71 @@ Animator.prototype.animateArrangement = function() {
 
 		self.updateActiveNotes();
 		self.clearArrangementCanvases();
+		self.clearCanvases(self.beatpadArrangementCanvases);
+		self.sizeBeatpadArrangementCanvases();
 
 		for (let i=0; i<self.activeNotes.length; i++) {
-			let note = self.activeNotes[i],
-				sequenceIndex = note.sequenceIndex,
+			let note = self.activeNotes[i];
+
+			/*
+				handle beatpad 
+			*/
+
+			if (note.kind === 'pattern') {
+				let filename = note.fname,
+					canvas = self.getBeatpadArrangementCanvas(filename),
+					ctx = canvas.getContext('2d'),
+					now = Date.now(),
+					start = note.start || now,
+					sign = note.sign || 1,
+					currentSize = note.currentSize || 3,
+					duration = Math.min(note.noteDuration, self.maxDuration)/2 * 1000,
+					p = (now-start) / duration,
+					val = ease.outQuad(p);
+
+				if (p > .9) {
+					note.sign = -1;
+					start = now;
+				}
+
+				currentSize = currentSize + (val*.1*sign);
+
+				note.start = start;
+				note.currentSize = currentSize;
+				self.activeCanvas = canvas;
+
+				let rect = canvas.parentElement.getBoundingClientRect(),
+					width = rect.width,
+					height = rect.height,
+					canvasCenter = {
+						x: (width/2),
+						y: (height/2)
+					}
+				canvas.width = width * self.ratio;
+				canvas.height = height * self.ratio;
+				canvas.style.width = width + 'px';
+				canvas.style.height = height + 'px';
+				ctx.scale(self.ratio, self.ratio);
+				ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+				if (currentSize < 0) continue;
+
+				// let color = instruments[filename].rgbString;
+				let color = 'white';
+				let props = {
+						fillStyle: color,
+						strokeStyle: color
+					};
+
+				self.drawDots([canvasCenter], currentSize, false, props);
+				continue;
+			}
+
+			/*
+				handle non-beatpad
+			*/
+
+			let sequenceIndex = note.sequenceIndex,
 				canvas = self.getArrangementCanvas(note.sequenceSetId, sequenceIndex),
 				ctx = canvas.getContext('2d'),
 				now = Date.now(),
@@ -217,8 +401,12 @@ Animator.prototype.animateInstrument = function() {
 
 		for (let i=0; i<self.activeNotes.length; i++) {
 			if (editedShape === undefined) continue;
-			let note = self.activeNotes[i],
-				coordinate = note.coordinate,
+
+			let note = self.activeNotes[i];
+
+			if (note.kind === 'pattern') continue;
+
+			let coordinate = note.coordinate,
 				now = Date.now(),
 				start = note.start || now,
 				sign = note.sign || 1,
@@ -383,6 +571,7 @@ Animator.prototype.sizeCanvas = function() {
 			canvasHeight: canvas.height/ratio
 		});
 	}
+	window.addEventListener('resize', this.sizeBeatpadCanvases.bind(this));
 }
 
 Animator.prototype.handleNewEditedSequence = function(data) {
@@ -403,6 +592,80 @@ Animator.prototype.getArrangementCanvas = function(setId, index) {
 	}
 }
 
+Animator.prototype.getBeatpadArrangementCanvas = function(filename) {
+	return this.beatpadArrangementCanvases.filter(function(canvas) {
+		return canvas.dataset.filename === filename;
+	})[0];
+}
+
+Animator.prototype.getBeatpadCanvas = function(filename) {
+	let canvasSet = this.beatpadCanvases.filter(function(canvas) {
+		return canvas.filename === filename;
+	});
+
+	return canvasSet[0].element;
+}
+
+Animator.prototype.getBeatpadCanvases = function() {
+	let canvases = [];
+	for (let i=0; i<this.beatpadCanvases.length; i++) {
+		canvases.push(this.beatpadCanvases[i].element);
+	}
+	return canvases;
+}
+
+Animator.prototype.clearBeatpadCanvases = function() {
+	let canvases = this.getBeatpadCanvases();
+	for (let i=0; i<canvases.length; i++) {
+		let canvas = canvases[i],
+			ctx = canvas.getContext('2d');
+		ctx.clearRect(0, 0, canvas.width, canvas.height);
+	}
+}
+
+Animator.prototype.sizeBeatpadCanvases = function() {
+	let canvases = this.getBeatpadCanvases();
+	for (let i=0; i<canvases.length; i++) {
+		let canvas = canvases[i],
+			ctx = canvas.getContext('2d'),
+			parent = canvas.parentElement,
+			rect = parent.getBoundingClientRect(),
+			ratio = this.ratio;
+		canvas.width = rect.width * ratio;
+		canvas.height = rect.height * ratio;
+		canvas.style.width = rect.width + 'px';
+		canvas.style.height = rect.height + 'px';
+		ctx.scale(this.ratio, this.ratio);
+	}
+}
+
+Animator.prototype.sizeBeatpadArrangementCanvases = function() {
+	for (let i=0; i<this.beatpadArrangementCanvases.length; i++) {
+		let canvas = this.beatpadArrangementCanvases[i],
+			ctx = canvas.getContext('2d'),
+			rect = canvas.parentElement.getBoundingClientRect(),
+			width = rect.width,
+			height = rect.height,
+			canvasCenter = {
+				x: (width/2),
+				y: (height/2)
+			};
+		canvas.width = width * self.ratio;
+		canvas.height = height * self.ratio;
+		canvas.style.width = width + 'px';
+		canvas.style.height = height + 'px';
+		ctx.scale(self.ratio, self.ratio);
+	}
+}
+
+Animator.prototype.clearCanvases = function(canvases) {
+	for (let i=0; i<canvases.length; i++) {
+		let canvas = canvases[i],
+			ctx = canvas.getContext('2d');
+		ctx.clearRect(0, 0, canvas.width, canvas.height);
+	}
+}
+
 Animator.prototype.clearArrangementCanvases = function() {
 	for (let i=0; i<this.arrangementCanvases.length; i++) {
 		let canvas = this.arrangementCanvases[i].canvas,
@@ -415,6 +678,14 @@ Animator.prototype.clearActiveCanvas = function() {
 	let canvas = this.activeCanvas,
 		ctx = canvas.getContext('2d');
 	ctx.clearRect(0, 0, canvas.width, canvas.height);
+}
+
+Animator.prototype.resetNotes = function(notes) {
+	for (let i=0; i<notes.length; i++) {
+		notes[i].start = undefined;
+		notes[i].sign = undefined;
+		notes[i].currentSize = undefined;
+	}
 }
 
 export { Animator };

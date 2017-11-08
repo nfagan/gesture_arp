@@ -1,18 +1,20 @@
 <template>
 	<div id="sequencer">
-		<instrument v-show="modeIsInstrument"></instrument>
-		<arrangement v-show="!modeIsInstrument"></arrangement>
+		<instrument v-show="getMode() === 'INSTRUMENT'"></instrument>
+		<arrangement v-show="getMode() === 'ARRANGEMENT'"></arrangement>
+		<beatpad v-show="getMode() === 'BEATPAD'"></beatpad>
 	</div>
 </template>
 
 <script>
 import Instrument from './Instrument';
 import Arrangement from './Arrangement';
+import Beatpad from './Beatpad';
 import { eventBus } from '../eventbus.js';
 
 export default {
 	name: 'sequencer',
-	components: { Instrument, Arrangement },
+	components: { Instrument, Arrangement, Beatpad },
 	mounted() {
 		let el = this.$el;
 		function resizer() {
@@ -22,14 +24,9 @@ export default {
 		window.addEventListener('resize', resizer);
 		resizer();
 	},
-	computed: {
-		modeIsInstrument() {
-			return this.$store.state.mode === 'INSTRUMENT';
-		}
-	},
 	methods: {
-		soundsAreLoaded() {
-			return this.$store.state.soundsAreLoaded
+		getMode() {
+			return this.$store.state.mode;
 		}
 	}
 }

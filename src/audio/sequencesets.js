@@ -1,6 +1,7 @@
 import { eventBus } from '../eventbus.js';
 import { SequenceSet } from './sequenceset.js';
 import { world } from '../world.js';
+import Pattern from './pattern.js';
 
 function SequenceSets() {
 	this.sequenceSets = [];
@@ -8,6 +9,7 @@ function SequenceSets() {
 	this.editedSequenceId = undefined;
 	this.maxNColumns = 4;
 	this.isLooping = false;
+	this.pattern = undefined;
 }
 
 SequenceSets.prototype.constructor = SequenceSets;
@@ -163,6 +165,12 @@ SequenceSets.prototype.deleteLastColumn = function() {
 	for (let i=0; i<this.sequenceSets.length; i++) {
 		this.sequenceSets[i].deleteLastSequence();
 	}
+}
+
+SequenceSets.prototype.createPattern = function() {
+	let pattern = new Pattern(this);
+	this.pattern = pattern;
+	return pattern;
 }
 
 export { SequenceSets };
