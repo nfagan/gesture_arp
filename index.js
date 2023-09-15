@@ -7,8 +7,7 @@ var http = require('http').Server(app)
 	establish where static content is stored
 */
 
-app.use(express.static('dist'))
-app.use(express.static('static'))
+app.use(express.static('./'))
 
 /*
 	url handling
@@ -17,7 +16,7 @@ app.use(express.static('static'))
 //	app
 
 app.get('/', function(req, res) {
-	res.sendFile('dist/html/index.html',{ root: __dirname })
+	res.sendFile('index.html',{ root: __dirname })
 });
 
 //	favicon
@@ -29,7 +28,7 @@ app.get('/favicon.ico', function(req, res) {
 //	serve sounds
 
 app.get('/sounds/:soundName', function(req, res) {
-	var filename = 'static/sounds' + req.params.soundName;
+	var filename = './sounds' + req.params.soundName;
 
 	fs.stat(filename, function(err, stat) {
 		if (err === null) {
